@@ -4,6 +4,8 @@ import com.codeborne.pdftest.PDF;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.xlstest.XLS;
 import com.opencsv.CSVReader;
+
+import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -11,10 +13,14 @@ import org.openqa.selenium.By;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+import static org.apache.commons.io.FilenameUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static com.codeborne.selenide.Selenide.$;
@@ -64,7 +70,25 @@ public class ParsingFilesTest {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null){
                 //simpleChecks
+                System.out.println(entry.getName());
             }
+        }
+    }
+
+    @Test
+    public void parseZipComplexTest() throws Exception{
+        URL zipUrl = classLoader.getResource("zip/archive.zip");
+        File file = new File(zipUrl.toURI());
+        ZipFile zipFile = new ZipFile(file);
+
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        while (entries.hasMoreElements()){
+            ZipEntry entry = entries.nextElement();
+            var name = entry.getName();
+            if (name.startsWith("__MACOSX"))
+                continue;
+            System.out.println((entry.getName()));
+            //вот тут-то мы и будем их колбасить!
         }
     }
 }
