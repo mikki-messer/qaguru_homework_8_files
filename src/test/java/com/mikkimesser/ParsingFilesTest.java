@@ -12,12 +12,15 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static com.codeborne.selenide.Selenide.$;
 
 public class ParsingFilesTest {
+    ClassLoader classLoader = getClass().getClassLoader();
 
     @DisplayName("Парсинг PDF файла")
     @Test
@@ -47,12 +50,21 @@ public class ParsingFilesTest {
     @DisplayName("Парсинг CSV файла")
     @Test
     public void parseCSVFile() throws Exception{
-        ClassLoader classLoader = getClass().getClassLoader();
         try (InputStream is = classLoader.getResourceAsStream("csv/contacts_example_test.csv");
              CSVReader csvReader = new CSVReader(new InputStreamReader(is))) {
             List<String[]> csvContent = csvReader.readAll();
             assertThat(csvContent.get(1)).contains("Kibbutz");
         }
     }
-
+    @Test
+    public void parseZipSimpleTest() throws Exception{
+        try (InputStream is = classLoader.getResourceAsStream("zip/archive.zip");
+             ZipInputStream zis = new ZipInputStream(is))
+        {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null){
+                //simpleChecks
+            }
+        }
+    }
 }
