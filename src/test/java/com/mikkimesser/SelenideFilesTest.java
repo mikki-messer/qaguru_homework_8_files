@@ -5,6 +5,8 @@ import com.codeborne.selenide.Selenide;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static com.codeborne.selenide.Condition.text;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.*;
@@ -39,5 +41,7 @@ public class SelenideFilesTest {
         Selenide.open("https://the-internet.herokuapp.com/upload");
         $("input[type='file']").uploadFromClasspath("img/images.jpeg");
         $("input[type='submit']").click();
+        $("div.example").shouldHave(text("File Uploaded!"));
+        $("#uploaded-files").shouldHave(text("images.jpeg"));
     }
 }
