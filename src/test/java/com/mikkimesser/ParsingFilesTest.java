@@ -40,7 +40,7 @@ public class ParsingFilesTest {
 
     @DisplayName("Парсинг XLS файла")
     @Test
-    public void parseXLSFile() throws Exception{
+    public void parseXLSFile() throws Exception {
         Selenide.open("https://ckmt.ru/price-download.html");
         File downloadedFile = $("a[href*='Tehresurs']").download();
 
@@ -55,20 +55,50 @@ public class ParsingFilesTest {
 
     @DisplayName("Парсинг CSV файла")
     @Test
-    public void parseCSVFile() throws Exception{
+    public void parseCSVFile() throws Exception {
         try (InputStream is = classLoader.getResourceAsStream("csv/contacts_example_test.csv");
              CSVReader csvReader = new CSVReader(new InputStreamReader(is))) {
             List<String[]> csvContent = csvReader.readAll();
             assertThat(csvContent.get(1)).contains("Kibbutz");
         }
     }
+
+    @DisplayName("Парсинг входящего CSV файла")
     @Test
-    public void parseZipSimpleTest() throws Exception{
+    public void parseCSVFileParametrized(InputStream incomingCSVStream) throws Exception {
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(incomingCSVStream))) {
+            List<String[]> csvContent = csvReader.readAll();
+            assertThat(csvContent.get(1)).contains("Kibbutz");
+        }
+    }
+
+    @DisplayName("Парсинг входящего PDF файла")
+    @Test
+    public void parsePDFFileParametrized(InputStream incomingPDFStream) throws Exception {
+        PDF pdf = new PDF(incomingPDFStream);
+
+        assertThat(pdf.text).contains("Setting the Default Display Name Generator");
+    }
+
+    @DisplayName("Парсинг входящего XLS файла")
+    @Test
+    public void parseXLSFileParametrized(InputStream incomingXLSStream) throws Exception {
+
+        XLS xls = new XLS(incomingXLSStream);
+        assertThat(xls.excel
+                .getSheetAt(0)
+                .getRow(9)
+                .getCell(0)
+                .getStringCellValue())
+                .isEqualTo("Электроды сварочные \"Орловские\" (Lincoln Eleсtric, Межгосметиз-Мценск)");
+    }
+
+    @Test
+    public void parseZipSimpleTest() throws Exception {
         try (InputStream is = classLoader.getResourceAsStream("zip/archive.zip");
-             ZipInputStream zis = new ZipInputStream(is))
-        {
+             ZipInputStream zis = new ZipInputStream(is)) {
             ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null){
+            while ((entry = zis.getNextEntry()) != null) {
                 //simpleChecks
                 System.out.println(entry.getName());
             }
@@ -76,19 +106,31 @@ public class ParsingFilesTest {
     }
 
     @Test
-    public void parseZipComplexTest() throws Exception{
-        URL zipUrl = classLoader.getResource("zip/archive.zip");
-        File file = new File(zipUrl.toURI());
-        ZipFile zipFile = new ZipFile(file);
-
+    public void parseZipComplexTest() throws Exception {
+        ZipFile zipFile = new ZipFile(new File("src/test/resources/zip/archive.zip"));
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        while (entries.hasMoreElements()){
+        while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
-            var name = entry.getName();
-            if (name.startsWith("__MACOSX"))
-                continue;
-            System.out.println((entry.getName()));
-            //вот тут-то мы и будем их колбасить!
+            try (InputStream entryInputStream = zipFile.getInputStream(entry)) {
+                String name = entry.getName();
+                if (name.startsWith("__MACOSX"))
+                    continue;
+                String extension = FilenameUtils.getExtension(name);
+                switch (extension) {
+                    case "xls":
+                        parseXLSFileParametrized(entryInputStream);
+                        break;
+                    case "csv":
+                        parseCSVFileParametrized(entryInputStream);
+                        break;
+                    case "pdf":
+                        parsePDFFileParametrized(entryInputStream);
+                        break;
+                    default:
+                        System.out.println("Unsupported file format");
+                        break;
+                }
+            }
         }
     }
 }
